@@ -30,6 +30,10 @@ financeiros, risco de crédito e qualidade do dado.
 Python (só a biblioteca padrão), SQL e SQLite, HTML/CSS e SVG, PowerShell e Agendador de Tarefas do
 Windows, Databricks SQL e Unity Catalog, faster-whisper (opcional, no 07).
 
+As páginas seguem o padrão visual dos painéis que eu construo: faixa de filtros e barra lateral em
+degradê verde → teal, cartões brancos com sombra curta, seções numeradas e a fonte Nunito embutida, para
+cada HTML abrir igual em qualquer máquina, sem internet.
+
 ## Como rodar
 
 Python 3.10 ou mais novo; não é preciso instalar nada (só o 07 usa um pacote opcional). Cada pasta tem um
@@ -51,3 +55,8 @@ python -m unittest discover -s testes -v
 ## Contato
 
 [LinkedIn](https://www.linkedin.com/in/felipe-menezes-823579326)
+
+## Créditos
+
+Fonte [Nunito](https://github.com/googlefonts/nunito), sob a SIL Open Font License 1.1; a licença acompanha
+cada pasta `fontes/`.

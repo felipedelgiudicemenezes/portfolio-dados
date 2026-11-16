@@ -100,11 +100,44 @@ class TestKpis(unittest.TestCase):
             soma = sum(payload["funil"][posicao]["quantidade"] for payload in gerentes) + digital[campo]
             self.assertEqual(soma, diretoria["funil"][posicao]["quantidade"])
 
+    def test_canais_somam_o_total_de_cada_mes(self):
+        for perfil in self.perfis:
+            payload = self.payloads[perfil["id"]]
+            esperados = ("digital", "correspondente") if perfil["gerente_id"] is None else ("correspondente",)
+            linhas = payload["fontes"]["vendas_por_mes_canal"]["linhas"]
+            with self.subTest(perfil["id"]):
+                self.assertEqual(payload["canais"], esperados)
+                self.assertLessEqual({linha["canal"] for linha in linhas}, set(esperados))  # gerente: sem digital
+                self.assertEqual([mes["mes"] for mes in payload["vendas_por_canal"]],
+                                 [mes["mes"] for mes in payload["vendas_por_mes"]])
+                for total, por_canal in zip(payload["vendas_por_mes"], payload["vendas_por_canal"]):
+                    canais = por_canal["canais"].values()
+                    self.assertEqual(sum(canal["contratos"] for canal in canais), total["contratos"], total["mes"])
+                    self.assertAlmostEqual(sum(canal["volume"] for canal in canais), total["volume"], places=2,
+                                           msg=total["mes"])
+
+    def test_cartoes_da_originacao_somam_o_todo(self):
+        for perfil in self.perfis:
+            origens = self.payloads[perfil["id"]]["origens"]
+            todo, partes = origens["todo"], origens["partes"]
+            esperados = {"digital", "correspondente"} if perfil["gerente_id"] is None else {"parceiro"}
+            with self.subTest(perfil["id"]):
+                self.assertEqual({parte["canal"] for parte in partes}, esperados)
+                for campo in ("contratos", "simulacoes", "pagas"):
+                    self.assertEqual(sum(parte[campo] for parte in partes), todo[campo])
+                self.assertAlmostEqual(sum(parte["volume"] for parte in partes), todo["volume"], places=2)
+                self.assertAlmostEqual(sum(parte["participacao"] for parte in partes), 100)
+                self.assertEqual(todo["contratos"], self.payloads[perfil["id"]]["kpis"]["contratos"]["atual"])
+
     def test_mes_sem_venda_entra_com_zero(self):
         linhas = [{"mes": "2026-01", "contratos": 2, "volume": 10.0, "prazo_medio": 12.0, "taxa_media": 1.5}]
         serie = kpis.serie_mensal(linhas, ["2025-12", "2026-01"])
         self.assertEqual([mes["contratos"] for mes in serie], [0, 2])
         self.assertEqual([mes["ticket_medio"] for mes in serie], [None, 5.0])
+        por_canal = kpis.serie_por_canal([{"mes": "2026-01", "canal": "digital", "contratos": 2, "volume": 10.0}],
+                                         ["2025-12", "2026-01"], kpis.CANAIS)
+        self.assertEqual([mes["canais"]["digital"]["contratos"] for mes in por_canal], [0, 2])
+        self.assertEqual([mes["canais"]["correspondente"]["volume"] for mes in por_canal], [0.0, 0.0])
 
 
 if __name__ == "__main__":

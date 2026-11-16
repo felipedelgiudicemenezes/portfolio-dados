@@ -127,17 +127,24 @@ def calcular(conexao: sqlite3.Connection) -> tuple[date, list[LinhaDaFaixa]]:
     return data_base, por_faixa(avaliacoes)
 
 
-def svg_pdd(linhas: list[LinhaDaFaixa], largura: int = 520) -> str:
+def cores_das_faixas() -> list[str]:
+    """Uma cor por faixa na rampa de teal: da A (clara) à H (escura), quanto mais grave, mais escura."""
+    return graficos.rampa(graficos.RAMPA_TEAL[::-1], len(FAIXAS))
+
+
+def svg_pdd(linhas: list[LinhaDaFaixa], largura: int = 560) -> str:
     """Barras deitadas com a PDD de cada faixa e a fatia de cada uma no total."""
     total = sum(linha.pdd for linha in linhas)
     barras = []
-    for linha in linhas:
+    for linha, cor in zip(linhas, cores_das_faixas()):
         faixa = linha.faixa
         barras.append(graficos.Barra(
             rotulo=faixa.nivel,
             detalhe=faixa.descricao.removeprefix("em dia ou "),
             valor=float(linha.pdd),
-            texto_do_valor=f"{moeda_curta(linha.pdd)} · {percentual(linha.pdd / total if total else 0)}",
+            texto_do_valor=moeda_curta(linha.pdd),
+            apoio=f"· {percentual(linha.pdd / total if total else 0)} da PDD",
+            cor=cor,
             dica=(f"Faixa {faixa.nivel} ({faixa.descricao}): {numero(linha.contratos)} contratos, "
                   f"saldo {moeda(linha.saldo)}, PDD {moeda(linha.pdd)}"),
         ))
@@ -146,7 +153,8 @@ def svg_pdd(linhas: list[LinhaDaFaixa], largura: int = 520) -> str:
         marcas_x=graficos.marcas(max(b.valor for b in barras), intervalos=3),
         formato_x=lambda valor: moeda_curta(Decimal(str(valor)), enxuto=True),
     )
-    return graficos.documento(largura, altura, conteudo, "PDD por faixa de atraso, em reais")
+    fundo = f'<rect width="100%" height="100%" fill="{graficos.FUNDO}"/>'
+    return graficos.documento(largura, altura, fundo + conteudo, "PDD por faixa de atraso, em reais")
 
 
 def tabela_texto(linhas: list[LinhaDaFaixa]) -> str:

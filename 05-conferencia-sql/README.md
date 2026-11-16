@@ -4,7 +4,7 @@ Confere, sem executar nada, se cada consulta `.sql` de uma dashboard ainda roda 
 
 > Todos os dados são fictícios, gerados por script.
 
-![Relatório HTML: 9 consultas, 4 ok, 3 com aviso e 2 com erro](img/relatorio.png)
+![Relatório HTML da conferência: faixa em degradê com o banco e a pasta, tiles com 9 consultas (4 ok, 3 com aviso, 2 com erro), tabela das consultas e um cartão por consulta](img/relatorio.png)
 
 ## O problema
 
@@ -34,7 +34,7 @@ SELECT date(criada_em) AS dia, COUNT(*) AS propostas ...
 1. **Prepara sem trazer dados.** `EXPLAIN <consulta>` compila a consulta e devolve o programa do SQLite, não as linhas. Tabela ou coluna que não existe aparece aqui: **erro**.
 2. **Descobre o que a consulta lê de verdade.** Durante a preparação, o `set_authorizer` do `sqlite3` recebe um evento `SQLITE_READ` com a tabela e a coluna de cada leitura. Sem parser de SQL: apelidos, CTEs, subconsultas e `SELECT *` já chegam resolvidos pelo próprio SQLite.
 3. **Compara declarado × usado.** "Declarado e não usado" ou "usado e não declarado": **aviso**. Faltar a linha `-- usa:` também é aviso.
-4. **Relatório** em Markdown (para revisão ou wiki) e em HTML autocontido, com os erros primeiro.
+4. **Relatório** em Markdown (para revisão ou wiki) e em HTML autocontido, com os erros primeiro. O HTML segue o visual das dashboards que eu faço no trabalho: faixa em degradê com o banco e a pasta conferidos, tiles com o total e cada status (percentual sempre com o absoluto, como "44,4% · 4 de 9"), a tabela das consultas e um cartão por consulta com o que ela declara, o que lê de fato e a diferença. As colunas que sobram na declaração aparecem riscadas (`−`) e as que faltam, destacadas (`+`); o arquivo na tabela leva ao cartão.
 
 ## Exemplo de saída
 
@@ -71,6 +71,8 @@ Os problemas foram plantados de propósito:
 - **Tabela sem coluna** (um `COUNT(*)`) é declarada só pelo nome: `-- usa: propostas`. **Visão** conta como tabela: o que ela lê por dentro não entra.
 - **Parâmetros nomeados** (`:inicio`, `:fim`) recebem NULL só para preparar a consulta; o valor não importa para a conferência.
 - **Aviso não derruba o agendador**; só o erro, que é o que quebraria a tela.
+- **HTML autocontido:** o CSS e a fonte Nunito (SIL OFL 1.1) vão dentro do arquivo, a fonte em base64; sem CDN nem JavaScript, o relatório abre igual sem internet, anexado num e-mail ou baixado do CI. Sem o arquivo da fonte, a página cai na fonte do sistema.
+- **Status sempre com ícone e texto**, nunca só pela cor: quem não distingue o verde do vermelho lê o mesmo relatório.
 - **Só a biblioteca padrão:** roda em qualquer máquina com Python, inclusive no CI.
 
 ## Estrutura
@@ -83,7 +85,12 @@ Os problemas foram plantados de propósito:
 │   ├── schema.sql           # parceiros, propostas e contratos (Fintech Exemplo)
 │   ├── criar_banco.py       # monta o SQLite com linhas fictícias
 │   └── consultas/           # 9 consultas, 5 com problema de propósito
-├── testes/test_conferir.py  # 30 testes (unittest)
+├── fontes/                  # Nunito em woff2 (vai embutida no HTML) e a licença OFL
+├── testes/test_conferir.py  # 39 testes (unittest)
 ├── img/relatorio.png        # captura do relatório HTML
 └── saida/                   # relatórios gerados (fora do git)
 ```
+
+## Créditos
+
+Fonte do relatório: Nunito (SIL OFL 1.1), de The Nunito Project Authors. A licença está em [`fontes/OFL.txt`](fontes/OFL.txt).

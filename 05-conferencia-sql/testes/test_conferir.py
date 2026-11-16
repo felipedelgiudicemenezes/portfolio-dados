@@ -5,7 +5,9 @@
 
 from __future__ import annotations
 
+import base64
 import io
+import re
 import sqlite3
 import sys
 import tempfile
@@ -13,6 +15,7 @@ import unittest
 from contextlib import closing, redirect_stderr, redirect_stdout
 from datetime import datetime
 from pathlib import Path
+from unittest import mock
 
 RAIZ = Path(__file__).resolve().parents[1]
 sys.path[:0] = [str(RAIZ), str(RAIZ / "exemplo")]
@@ -167,6 +170,82 @@ class TestRelatorios(unittest.TestCase):
         self.assertIn('<span class="selo selo-ok"><svg', pagina)
         for externo in ("<script", "<link", "http://", "https://"):
             self.assertNotIn(externo, pagina)
+
+
+def _ok(nome: str, sql: str = "-- usa: t.x\nSELECT x FROM t") -> conferir.Conferencia:
+    return conferir.Conferencia(nome, sql, frozenset({"t.x"}), frozenset({"t.x"}))
+
+
+def _aviso(nome: str) -> conferir.Conferencia:
+    return conferir.Conferencia(nome, "-- usa: t.velha\nSELECT nova FROM t", frozenset({"t.velha"}), frozenset({"t.nova"}))
+
+
+def _erro(nome: str) -> conferir.Conferencia:
+    return conferir.Conferencia(nome, "SELECT nome FROM lojistas", frozenset({"lojistas.nome"}),
+                                erro="tabela não existe: lojistas")
+
+
+class TestVisualDoHtml(unittest.TestCase):
+    AGORA = datetime(2026, 1, 2, 9, 30)
+
+    def pagina(self, conferencias: list[conferir.Conferencia]) -> str:
+        return relatorio.para_html(conferencias, "banco.sqlite", "consultas", self.AGORA)
+
+    def test_fonte_nunito_embutida_em_base64_igual_ao_arquivo(self):
+        pagina = self.pagina([_ok("a.sql")])
+        achou = re.search(r'url\(data:font/woff2;base64,([A-Za-z0-9+/=]+)\) format\("woff2"\)', pagina)
+        self.assertIsNotNone(achou)
+        self.assertEqual(base64.b64decode(achou.group(1)), relatorio.FONTE.read_bytes())
+        self.assertIn('font-family: "Nunito";', pagina)
+        self.assertIn("font-weight: 400 800;", pagina)
+        self.assertIn('--sans: "Nunito", system-ui, "Segoe UI", sans-serif;', pagina)
+
+    def test_sem_o_arquivo_da_fonte_a_pagina_usa_a_fonte_do_sistema(self):
+        with tempfile.TemporaryDirectory() as tmp, \
+                mock.patch.object(relatorio, "FONTE", Path(tmp) / "nao_existe.woff2"):
+            pagina = self.pagina([_ok("a.sql")])
+        self.assertNotIn("@font-face", pagina)
+        self.assertIn('system-ui, "Segoe UI", sans-serif', pagina)
+
+    def test_tiles_com_o_percentual_e_o_absoluto(self):
+        conferencias = ([_erro(f"e{i}.sql") for i in range(2)] + [_aviso(f"a{i}.sql") for i in range(3)]
+                        + [_ok(f"o{i}.sql") for i in range(4)])
+        pagina = self.pagina(conferencias)
+        for texto in ("<strong>100%</strong> · 9 de 9", "<strong>44,4%</strong> · 4 de 9",
+                      "<strong>33,3%</strong> · 3 de 9", "<strong>22,2%</strong> · 2 de 9"):
+            self.assertIn(texto, pagina)
+        self.assertIn('aria-label="4 ok, 3 com aviso, 2 com erro"', pagina)
+
+    def test_cada_consulta_tem_um_cartao_e_a_tabela_aponta_para_ele(self):
+        pagina = self.pagina([_erro("e.sql"), _aviso("a.sql"), _ok("o.sql")])
+        links = re.findall(r'href="#(consulta-[^"]+)"', pagina)
+        cartoes = re.findall(r'<article class="consulta consulta-\w+" id="(consulta-[^"]+)"', pagina)
+        self.assertEqual(len(links), 3)
+        self.assertEqual(links, cartoes)
+        self.assertIn('<div class="detalhes-ok">', pagina)  # as OK ficam juntas, em duas colunas
+
+    def test_cartao_de_aviso_destaca_o_que_sobra_e_o_que_falta(self):
+        pagina = self.pagina([_aviso("a.sql")])
+        self.assertRegex(pagina, r'<span class="chip chip-sobra"[^>]*>.*?t\.velha</span>')
+        self.assertRegex(pagina, r'<span class="chip chip-falta"[^>]*>.*?t\.nova</span>')
+
+    def test_cartao_de_erro_mostra_a_mensagem_do_sqlite(self):
+        pagina = self.pagina([_erro("e.sql")])
+        self.assertIn('<p class="mensagem-erro">tabela não existe: lojistas</p>', pagina)
+        self.assertIn('<span class="chip">lojistas.nome</span>', pagina)
+
+    def test_descricao_do_quadro_sai_do_comentario_do_topo_escapada(self):
+        com_descricao = _ok("a.sql", '-- Quadro "<Teste>" & cia\n-- usa: t.x\nSELECT x FROM t')
+        self.assertIn('<p class="consulta-desc">Quadro &quot;&lt;Teste&gt;&quot; &amp; cia</p>',
+                      self.pagina([com_descricao]))
+        self.assertNotIn('class="consulta-desc"', self.pagina([_ok("b.sql")]))  # a linha `-- usa:` não conta
+
+    def test_uma_consulta_so_fica_no_singular(self):
+        self.assertIn("<strong>1 consulta</strong> conferida em", self.pagina([_ok("a.sql")]))
+
+    def test_a_licenca_da_fonte_acompanha_o_projeto(self):
+        self.assertTrue((RAIZ / "fontes" / "OFL.txt").is_file())
+        self.assertIn("Nunito (SIL OFL 1.1)", (RAIZ / "README.md").read_text(encoding="utf-8"))
 
 
 class TestLinhaDeComando(ComBanco):

@@ -13,7 +13,8 @@ PASTA_SQL = Path(__file__).resolve().parent / "sql"
 EMPRESA = "Fintech Exemplo"
 INDICADORES = ("volume", "contratos", "ticket_medio", "prazo_medio", "taxa_media")
 VARIACAO_EM_DIFERENCA = {"prazo_medio", "taxa_media"}  # em meses e em pontos percentuais
-QUADROS = ("vendas_por_mes", "funil", "motivos_recusa", "ranking_parceiros")
+QUADROS = ("vendas_por_mes", "vendas_por_mes_canal", "funil", "motivos_recusa", "ranking_parceiros")
+CANAIS = ("digital", "correspondente")  # o digital não tem gerente: só a diretoria o recebe
 
 
 def conectar(caminho):
@@ -49,24 +50,32 @@ def montar_payload(con, perfil):
                   "inicio": mes.isoformat(), "fim": proximo_mes(mes).isoformat()}
     fontes = {nome: consultar(con, nome, parametros) for nome in QUADROS}
 
-    serie = serie_mensal(fontes["vendas_por_mes"]["linhas"], meses_entre(primeiro_dia, ultimo_dia))
+    meses = meses_entre(primeiro_dia, ultimo_dia)
+    canais = CANAIS if perfil["gerente_id"] is None else ("correspondente",)
+    serie = serie_mensal(fontes["vendas_por_mes"]["linhas"], meses)
     anterior = serie[-2] if len(serie) > 1 else None
     funil = montar_funil(fontes["funil"]["linhas"])
     simulacoes, pagas = funil[0]["quantidade"], funil[-1]["quantidade"]
     motivos = montar_motivos(fontes["motivos_recusa"]["linhas"], simulacoes)
+    ranking = montar_ranking(fontes["ranking_parceiros"]["linhas"])
     return {
         "empresa": EMPRESA,
         "perfil": perfil,
         "data_dado": ultimo_dia.isoformat(),
+        "periodo": {"inicio": mes.isoformat(), "fim": ultimo_dia.isoformat()},
         "mes_referencia": serie[-1]["mes"],
         "mes_anterior": anterior["mes"] if anterior else None,
         "kpis": montar_kpis(serie[-1], anterior),
         "vendas_por_mes": serie,
+        "canais": canais,
+        "vendas_por_canal": serie_por_canal(fontes["vendas_por_mes_canal"]["linhas"], meses, canais),
+        "contratos_no_ano": sum(item["contratos"] for item in serie),
         "funil": funil,
         "conversao_total": percentual(pagas, simulacoes),
         "em_andamento": simulacoes - pagas - motivos["total"],
         "motivos": motivos,
-        "ranking": montar_ranking(fontes["ranking_parceiros"]["linhas"]),
+        "ranking": ranking,
+        "origens": montar_origens(ranking, diretoria=perfil["gerente_id"] is None),
         "fontes": fontes,
     }
 
@@ -87,6 +96,16 @@ def serie_mensal(linhas, meses):
             "taxa_media": linha["taxa_media"],
         })
     return serie
+
+
+def serie_por_canal(linhas, meses, canais):
+    """Contratos e volume de cada canal em cada mês do período, com zero no mês sem venda."""
+    por_mes_e_canal = {(linha["mes"], linha["canal"]): linha for linha in linhas}
+    vazio = {"contratos": 0, "volume": 0.0}
+    return [{"mes": mes,
+             "canais": {canal: {campo: por_mes_e_canal.get((mes, canal), vazio)[campo] for campo in vazio}
+                        for canal in canais}}
+            for mes in meses]
 
 
 def montar_kpis(atual, anterior):
@@ -131,9 +150,30 @@ def montar_ranking(linhas):
     digital = [_com_indicadores(linha) for linha in linhas if linha["parceiro_id"] is None]
     for posicao, linha in enumerate(parceiros, start=1):
         linha["posicao"] = posicao
-    soma = {campo: sum(linha[campo] for linha in parceiros + digital)
-            for campo in ("contratos", "volume", "simulacoes", "pagas")}
-    return {"parceiros": parceiros, "digital": digital[0] if digital else None, "total": _com_indicadores(soma)}
+    return {"parceiros": parceiros, "digital": digital[0] if digital else None,
+            "total": _com_indicadores(_somar(parceiros + digital))}
+
+
+def montar_origens(ranking, diretoria):
+    """Os cartões da Originação: o todo da página e as partes que o somam.
+
+    Diretoria: todos = canal digital + correspondentes. Gerente: a carteira (só
+    correspondentes) = cada parceiro dela. A participação de cada parte é sobre o volume do todo.
+    """
+    if diretoria:
+        todo = {**ranking["total"], "canal": "todos"}
+        partes = [{**ranking["digital"], "canal": "digital"},
+                  {**_com_indicadores(_somar(ranking["parceiros"])), "canal": "correspondente"}]
+    else:
+        todo = {**ranking["total"], "canal": "correspondente"}
+        partes = [{**parceiro, "canal": "parceiro"} for parceiro in ranking["parceiros"]]
+    for parte in partes:
+        parte["participacao"] = percentual(parte["volume"], todo["volume"])
+    return {"todo": todo, "partes": partes}
+
+
+def _somar(linhas):
+    return {campo: sum(linha[campo] for linha in linhas) for campo in ("contratos", "volume", "simulacoes", "pagas")}
 
 
 def _com_indicadores(linha):

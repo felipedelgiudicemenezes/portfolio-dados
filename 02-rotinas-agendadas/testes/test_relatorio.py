@@ -1,5 +1,6 @@
-"""Testes do e-mail do funil: totais que batem com os dados gerados, formatos brasileiros e o .eml."""
+"""Testes do e-mail do funil: totais que batem com os dados gerados, formatos brasileiros, o visual e o .eml."""
 
+import base64
 import email
 import email.policy
 import html
@@ -17,12 +18,26 @@ import relatorio_diario as relatorio  # noqa: E402
 
 DIA = date(2026, 11, 16)
 ULTIMA = len(relatorio.ETAPAS) - 1
+UTIL = relatorio.LARGURA - 2 - 2 * relatorio.RESPIRO  # largura do conteúdo do cartão do funil
 
 
 def linha_total(pagina: str) -> list[str]:
     """Células da linha "Total" da tabela de canais, como texto."""
     linha = re.search(r"<tr><td[^>]*>Total</td>(.*?)</tr>", pagina, re.S).group(1)
     return [html.unescape(re.sub(r"<[^>]+>", "", celula)) for celula in re.findall(r"<td[^>]*>(.*?)</td>", linha, re.S)]
+
+
+def texto_visivel(pagina: str) -> str:
+    """O texto que aparece na tela: sem o <head>, sem a prévia escondida e sem as tags."""
+    corpo = pagina.split("</head>", 1)[1]
+    corpo = re.sub(r'<div style="display:none;.*?</div>', "", corpo, flags=re.S)
+    return re.sub(r"\s+", " ", html.unescape(re.sub(r"<[^>]+>", " ", corpo)))
+
+
+def barras_do_funil(pagina: str) -> list[tuple[int, str, str]]:
+    """(largura, cor, conteúdo) de cada barra do funil, na ordem."""
+    achadas = re.findall(r'<td width="(\d+)" height="\d+" bgcolor="(#[0-9a-f]{6})"[^>]*>(<table.*?</table>|&nbsp;)</td>', pagina, re.S)
+    return [(int(largura), cor, conteudo) for largura, cor, conteudo in achadas if cor in relatorio.RAMPA_FUNIL]
 
 
 class TestRelatorio(unittest.TestCase):
@@ -55,10 +70,73 @@ class TestRelatorio(unittest.TestCase):
         ]
         self.assertEqual(linha_total(self.html), esperado)
 
-    def test_email_sem_javascript_e_com_estilo_inline(self):
+    def test_email_sem_javascript_e_estilo_so_no_head(self):
+        cabeca, corpo = self.html.split("</head>", 1)
         self.assertNotIn("<script", self.html.lower())
-        self.assertNotIn("<style", self.html.lower())
         self.assertNotIn("<link", self.html.lower())
+        self.assertNotIn("<style", corpo.lower(), "no corpo, todo estilo é inline")
+
+        fonte, outlook = re.findall(r"<style>(.*?)</style>", cabeca, re.S)
+        fonte = re.sub(r"base64,[A-Za-z0-9+/=]+", "base64,", fonte)
+        self.assertRegex(fonte, r"^\s*@media screen \{\s*@font-face\{[^{}]*\}\s*\}\s*$", "o <style> aberto só traz a fonte")
+        self.assertIn(f"<!--[if mso]><style>{outlook}</style><![endif]-->", cabeca, "o outro <style> é só do Outlook")
+
+    def test_nunito_embutida_com_fonte_de_reserva(self):
+        dados = re.search(r"base64,([A-Za-z0-9+/=]+)", self.html).group(1)
+        self.assertEqual(base64.b64decode(dados), relatorio.ARQUIVO_FONTE.read_bytes())
+        self.assertTrue((relatorio.ARQUIVO_FONTE.parent / "OFL.txt").exists(), "a licença vai junto com a fonte")
+        familias = set(re.findall(r"font-family:([^;\"]+)", self.html.split("</head>", 1)[1]))
+        self.assertEqual(familias, {"Nunito,'Segoe UI',Arial,sans-serif"}, "cada célula com a Nunito e a reserva")
+
+    def test_degrade_tem_cor_solida_de_reserva(self):
+        celulas = re.findall(r"<td[^>]*linear-gradient[^>]*>", self.html)
+        self.assertTrue(celulas)
+        for celula in celulas:
+            self.assertIn(f'bgcolor="{relatorio.TEAL}"', celula)
+            self.assertLess(
+                celula.index(f"background-color:{relatorio.TEAL}"), celula.index("background-image:"),
+                "a cor sólida vem antes, e o degradê por cima onde o cliente aceita",
+            )
+
+    def test_barras_do_funil_proporcionais_na_rampa_e_com_rotulo_branco(self):
+        larguras = relatorio.larguras_do_funil(self.resumo.funil, UTIL)
+        self.assertEqual(larguras[0], UTIL, "a entrada do funil ocupa a largura toda")
+        for quantidade, largura in zip(self.resumo.funil, larguras):
+            self.assertAlmostEqual(largura, quantidade / self.resumo.simulacoes * UTIL, delta=0.5)
+
+        barras = barras_do_funil(self.html)
+        self.assertEqual([(largura, cor) for largura, cor, _ in barras], list(zip(larguras, relatorio.RAMPA_FUNIL)))
+        for (_, _, conteudo), etapa, quantidade in zip(barras, relatorio.ETAPAS, self.resumo.funil):
+            self.assertIn(f'color:{relatorio.BRANCO};">{html.escape(etapa)}</td>', conteudo)
+            self.assertIn(f'color:{relatorio.BRANCO};">{relatorio.numero(quantidade)}</td>', conteudo)
+
+    def test_escala_do_funil_deixa_espaco_para_a_conversao(self):
+        larguras = relatorio.larguras_do_funil([1000, 950, 500, 100], 600, reserva=150)
+        self.assertLessEqual(larguras[1], 600 - 150)
+        self.assertAlmostEqual(larguras[1] / larguras[0], 0.95, delta=0.01)
+        self.assertEqual(relatorio.larguras_do_funil([0, 0], 600), [0, 0])
+
+    def test_barra_estreita_leva_o_nome_para_fora(self):
+        apertado = relatorio.Resumo([1000, 400, 120, 30, 10], self.resumo.canais)
+        pagina = relatorio.montar_html(apertado, DIA)
+        self.assertIn(f'color:{relatorio.BRANCO};">Proposta enviada</td>', pagina)
+        self.assertIn(f'color:{relatorio.TEXTO};">Contrato pago</td>', pagina, "10 de 1.000 não comporta o nome")
+        self.assertNotIn(f'color:{relatorio.BRANCO};">Contrato pago</td>', pagina)
+
+    def test_mini_barra_e_a_parte_do_canal_no_volume(self):
+        partes = re.findall(rf'<td width="(\d+)%" height="\d+" bgcolor="{relatorio.TEAL_CLARO}"', self.html)
+        esperado = [round(canal.volume / self.resumo.volume * 100) for canal in self.resumo.canais.values()]
+        self.assertEqual([int(parte) for parte in partes], esperado)
+
+    def test_todo_percentual_vem_com_o_absoluto(self):
+        texto = texto_visivel(self.html)
+        percentuais = re.findall(r"\d+,\d%", texto)
+        self.assertGreaterEqual(len(percentuais), 11)  # cartão, 4 etapas, a frase do funil e 5 linhas de canal
+        self.assertEqual(len(re.findall(r"\d+,\d% · [\d.]+ de [\d.]+", texto)), len(percentuais))
+
+    def test_email_abaixo_do_corte_do_gmail(self):
+        """O Gmail corta o e-mail com mais de ~102 KB de HTML; a fonte embutida pesa uns 52 KB."""
+        self.assertLess(len(self.html.encode("utf-8")), 100_000)
 
     def test_mesma_semente_mesmos_dados(self):
         self.assertEqual(relatorio.gerar_simulacoes(random.Random(relatorio.SEMENTE)), self.simulacoes)

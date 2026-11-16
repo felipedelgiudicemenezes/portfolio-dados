@@ -30,29 +30,37 @@ Para atualizar as páginas a cada 5 minutos no Windows, `.\agendar.ps1` mostra a
 ├── gerar_base.py   base fictícia → dados/base.sqlite
 ├── sql/            uma consulta por quadro; o comentário do topo diz o que mostra e o que usa
 ├── kpis.py         regras: roda as consultas e monta o payload de cada perfil
-├── render.py       payload → HTML autocontido, com os gráficos em SVG
+├── render.py       payload → HTML autocontido: gráfico e ícones em SVG, funil e barras em HTML
 ├── estilo.css      o CSS que o render.py embute na página
+├── fontes/         Nunito e a licença dela (SIL OFL 1.1); o render.py embute a fonte na página
 ├── build.py        orquestra tudo e grava saida/<perfil>.html
 ├── agendar.ps1     atualização a cada 5 minutos pelo Agendador do Windows (simula por padrão)
 ├── testes/         unittest
-└── img/            a captura abaixo
+└── img/            as capturas abaixo
 ```
 
 ## Exemplo de saída
 
-Página da diretoria, mês de referência outubro de 2026. Cada quadro tem um **fonte** que abre o SQL, os parâmetros usados e as linhas que a consulta devolveu.
+O visual segue o mesmo padrão do painel que construí no trabalho: barra lateral em degradê, faixa de filtros, cartões de origem e funil em rampa.
+
+Página da diretoria, mês de referência outubro de 2026. Cada quadro tem um **fonte** que abre o SQL, os parâmetros usados e as linhas que a consulta devolveu; a chave **Mostrar fontes** de cada seção esconde ou mostra esses links, só com CSS. Os filtros da faixa mostram o recorte com que a página foi gerada.
 
 ![Página da diretoria](img/dashboard.png)
+
+Página de um gerente, no mesmo mês: só a carteira dele. No lugar dos cartões de canal entram os parceiros, e os filtros dizem o recorte.
+
+![Topo da página de um gerente](img/dashboard-gerente.png)
 
 ## Decisões técnicas
 
 - **Recorte antes da página.** O perfil vira o parâmetro `:gerente_id` das consultas, então o payload de um gerente já nasce sem dado dos outros. Nada fica escondido no navegador, e um teste confere que o HTML de um gerente não tem nome de parceiro alheio.
 - **SQL à vista.** Cada quadro lê um arquivo de `sql/`, e a página mostra esse mesmo texto no "fonte".
-- **Uma consulta para o KPI e para o gráfico.** O volume do mês nos indicadores e a coluna do mês no gráfico saem da mesma consulta; não têm como divergir.
+- **O gráfico fecha com os indicadores.** Os indicadores saem de `vendas_por_mes.sql` e as colunas empilhadas por canal, de `vendas_por_mes_canal.sql`; um teste confere, mês a mês, que os canais somados dão o total.
 - **Duas datas, ditas na tela.** Volume e contratos contam pela data de pagamento; funil, motivos e conversão, pelas propostas criadas no mês. Proposta assinada que ainda não foi paga aparece como "em andamento", não como perda.
-- **Os números fecham.** Os testes conferem os KPIs com contas feitas direto no SQLite, a soma dos meses com o total, o ranking com os KPIs e o funil, e os gerentes mais o canal digital com a diretoria.
+- **Os números fecham.** Os testes conferem os KPIs com contas feitas direto no SQLite, a soma dos meses com o total, os canais com o total de cada mês, os cartões da Originação com o todo, o ranking com os KPIs e o funil, e os gerentes mais o canal digital com a diretoria.
 - **Padrão brasileiro.** R$ 1.234,56, arredondamento comercial (12,25 vira 12,3, como na planilha) e todo percentual com o absoluto: "12,3% · 98 de 800".
-- **Sem dependências.** Gráficos em SVG gerados em Python; a página abre offline. A base é aberta só para leitura, e cada página é trocada de uma vez (arquivo temporário + `os.replace`): quem a abre durante a atualização vê sempre uma versão inteira.
+- **Sem dependências.** Gráfico e ícones em SVG gerados em Python, sem JavaScript, e a fonte embutida em base64: a página abre offline. A base é aberta só para leitura, e cada página é trocada de uma vez (arquivo temporário + `os.replace`): quem a abre durante a atualização vê sempre uma versão inteira.
+- **Fonte.** Nunito, de The Nunito Project Authors, sob a SIL Open Font License 1.1; o texto da licença está em `fontes/OFL.txt`.
 - **Reproduzível.** `random.Random(42)`; um teste gera a base duas vezes e compara.
 
 > Todos os dados são fictícios, gerados por script.

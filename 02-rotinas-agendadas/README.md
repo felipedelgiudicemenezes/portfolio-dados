@@ -45,6 +45,7 @@ Para o `--enviar` do e-mail, defina `SMTP_HOST`, `SMTP_PORT` (587 por padrão; 4
 ├── rotinas.json                as rotinas: comando, agenda e limites
 ├── agendar_rotinas.ps1         registra as tarefas no Agendador (sem -Registrar, só simula)
 ├── relatorio_diario.py         e-mail HTML do funil do dia (.html e .eml; SMTP com --enviar)
+├── fontes/                     Nunito (SIL OFL 1.1), embutida no e-mail; licença em OFL.txt
 ├── backup.ps1                  zip com data no nome, retenção dos N últimos e log; -WhatIf simula
 ├── exemplos/tarefa_ficticia.py tarefa de mentira usada pelas rotinas de exemplo
 ├── testes/                     unittest
@@ -102,7 +103,7 @@ Em ordem: 2 de 5 rotinas (avaliado em 16/11/2026 14:32).
 
 Com `--agora 2026-11-17T09:00`, `carga_propostas` e `relatorio_diario` passam a aparecer como `atrasada`.
 
-O e-mail do funil do dia, como chega na caixa de entrada:
+O e-mail do funil do dia, como chega na caixa de entrada (no Outlook do Windows, o mesmo layout aparece com o cabeçalho em teal liso, cantos retos e a fonte Segoe UI):
 
 ![E-mail do funil do dia](img/relatorio.png)
 
@@ -113,7 +114,8 @@ O e-mail do funil do dia, como chega na caixa de entrada:
 - **Estado gravado de forma atômica** (arquivo temporário e `os.replace`): o painel nunca lê um JSON pela metade. Um estado "rodando" cujo processo já morreu aparece como `interrompida`.
 - **Saída do comando num arquivo temporário, não num pipe:** um comando que escreve muito não fica travado esperando leitura, e stdout e stderr chegam juntos ao log.
 - **O Agendador só guarda a agenda.** Cada tarefa chama `python rotina.py <nome>`; o comando e os limites ficam no `rotinas.json`, então mudar o comando não exige registrar a tarefa de novo. Com `StartWhenAvailable`, a rotina perdida roda quando o PC volta a ligar.
-- **E-mail feito para o Outlook,** que desenha HTML com o motor do Word: layout em tabelas, CSS inline, cor repetida em `bgcolor`, barras feitas de células e nenhum JavaScript, além de uma versão em texto puro.
+- **E-mail com a cara da dashboard, feito para o Outlook.** A paleta é a da tela: cabeçalho em degradê de verde a teal, cartões brancos com fio colorido no topo e o funil numa rampa de seis tons de teal, com o nome e a quantidade dentro de cada barra (se a barra for estreita demais, o texto vai para fora dela, e a largura continua proporcional). O Outlook do Windows desenha HTML com o motor do Word, então o layout é todo em tabelas, com CSS inline e nenhum JavaScript: cada cor vai também em `bgcolor`, o degradê fica por cima de um teal sólido (é o que o Outlook mostra) e as barras são feitas de células. Cantos arredondados e sombra, o Outlook ignora sem quebrar nada. Há também uma versão em texto puro.
+- **Fonte embutida, com reserva.** A Nunito (SIL OFL 1.1, licença em `fontes/OFL.txt`) vai em base64 num `@font-face`, num `<style>` no `<head>`: quem aceita fonte web (Apple Mail, iPhone, Thunderbird) usa a Nunito; os outros, como o Gmail e o Outlook do Windows, caem em "Segoe UI", Arial, sans-serif. O `@font-face` fica dentro de `@media screen`, que o Outlook não lê: se ele visse uma fonte que não consegue carregar, trocaria o texto todo por Times New Roman. Com a fonte, o HTML tem uns 77 KB, abaixo dos ~102 KB a partir dos quais o Gmail corta a mensagem.
 - **Backup que não engana a retenção:** o zip nasce como `.parcial` e só ganha o nome final quando termina, então um backup interrompido nunca conta como um dos N guardados.
 
 Todos os dados são fictícios, gerados por script.
