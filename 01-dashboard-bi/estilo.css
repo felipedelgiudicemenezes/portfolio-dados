@@ -1,0 +1,116 @@
+/* Estilo da página. O render.py embute este arquivo no HTML: a página não carrega nada de fora. */
+
+:root {
+  --marinho: #1c2d42;
+  --areia: #d6b78a;
+  --bronze: #8a6230;
+  --creme: #f7f0e5;
+  --tinta: #18212c;
+  --cinza: #677282;
+  --fundo: #ffffff;
+  --fio: #e6dac6;
+  --mono: ui-monospace, "Cascadia Mono", Consolas, monospace;
+}
+
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--fundo); color: var(--tinta);
+       font: 15px/1.5 "Inter", "Segoe UI", Arial, sans-serif; }
+
+/* Cabeçalho */
+.topo { background: var(--marinho); color: var(--creme); }
+.topo-conteudo, main, footer { max-width: 1280px; margin: 0 auto; padding-left: 40px; padding-right: 40px; }
+.topo-conteudo { display: flex; flex-wrap: wrap; gap: 20px 32px; justify-content: space-between;
+                 align-items: flex-end; padding-top: 28px; padding-bottom: 26px; }
+.marca { margin: 0; color: var(--areia); font-size: 12.5px; font-weight: 700; letter-spacing: .12em;
+         text-transform: uppercase; }
+h1 { margin: 6px 0 8px; font-size: 30px; line-height: 1.15; font-weight: 700; }
+.datas { margin: 0; font-size: 14px; color: rgba(247, 240, 229, .82); }
+.datas strong { color: var(--creme); }
+.perfil { border: 1px solid rgba(214, 183, 138, .55); border-radius: 12px; padding: 10px 18px; text-align: right; }
+.perfil small { display: block; color: var(--areia); font-size: 11.5px; font-weight: 700; letter-spacing: .12em;
+                text-transform: uppercase; }
+.perfil strong { display: block; font-size: 19px; line-height: 1.3; }
+.perfil span { font-size: 13px; color: rgba(247, 240, 229, .82); }
+
+/* Cartões */
+main { display: grid; gap: 20px; padding-top: 28px; padding-bottom: 8px; }
+.cartao { display: flex; flex-direction: column; min-width: 0; background: var(--creme); border-radius: 14px;
+          padding: 22px 24px 16px; }
+.corpo { flex: 1; }
+.cartao h2 { margin: 0; color: var(--marinho); font-size: 18px; font-weight: 700; }
+.sub { margin: 3px 0 18px; color: var(--cinza); font-size: 13.5px; }
+.dupla { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+.resumo { margin: 14px 0 0; font-size: 13.5px; }
+.resumo + .resumo { margin-top: 2px; color: var(--cinza); }
+.nota { margin: 12px 0 0; color: var(--cinza); font-size: 12.5px; }
+
+/* KPIs */
+.kpis { display: grid; grid-template-columns: 1.45fr repeat(4, 1fr); gap: 12px; }
+.kpi { background: var(--fundo); border-radius: 10px; padding: 14px 16px; }
+.kpi-rotulo { color: var(--cinza); font-size: 13px; }
+.kpi-valor { margin: 2px 0 6px; color: var(--marinho); font-size: 24px; font-weight: 700; white-space: nowrap; }
+.kpi.destaque .kpi-valor { font-size: 30px; }
+.kpi-var { font-size: 13.5px; font-weight: 600; }
+.kpi-base { color: var(--cinza); font-size: 12.5px; }
+
+/* Gráficos */
+svg.grafico { display: block; width: 100%; height: auto; overflow: visible; }
+svg.grafico.largo { min-width: 720px; }  /* em tela estreita, o gráfico rola em vez de encolher o texto */
+.grafico text { fill: var(--cinza); font-size: 12px; }
+.grafico .grade { stroke: var(--fio); stroke-width: 1; }
+.grafico .base { stroke: var(--areia); stroke-width: 1; }
+.grafico .alvo { fill: transparent; }
+.grafico .coluna path { fill: var(--marinho); }
+.grafico .coluna.atual path { fill: var(--bronze); }
+.grafico .coluna:hover path, .grafico g:hover .barra { opacity: .82; }
+.grafico .coluna.atual .mes, .grafico .valor { fill: var(--tinta); font-weight: 700; }
+.grafico .rotulo { fill: var(--tinta); font-size: 13.5px; font-weight: 600; }
+.grafico .numeros { fill: var(--tinta); font-size: 13px; font-variant-numeric: tabular-nums; }
+.grafico .etapa { fill: var(--cinza); font-size: 10.5px; font-weight: 700; letter-spacing: .06em; }
+.grafico .trilho { fill: var(--areia); opacity: .3; }
+.funil .barra { fill: var(--marinho); }
+.funil .final .barra { fill: var(--bronze); }
+.motivos .barra { fill: var(--bronze); }
+
+/* Tabelas */
+.rolavel { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; }
+.ranking { font-size: 14px; }
+.ranking th { padding: 0 12px 8px; border-bottom: 1px solid var(--areia); color: var(--cinza); font-size: 12.5px;
+              font-weight: 600; text-align: left; white-space: nowrap; }
+.ranking td { padding: 9px 12px; border-bottom: 1px solid var(--fio); }
+.ranking tbody tr:hover { background: rgba(214, 183, 138, .16); }
+.ranking .pos { width: 36px; color: var(--cinza); }
+.ranking tfoot td { border-bottom: 0; }
+.ranking tr.digital td { color: var(--cinza); border-top: 1px solid var(--areia); }
+.ranking tr.total td { color: var(--marinho); font-weight: 700; border-top: 1px solid var(--areia); }
+.ranking .num, .linhas .num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+/* "fonte": o SQL e as linhas devolvidas */
+details.fonte { margin-top: 14px; padding-top: 10px; border-top: 1px solid var(--fio); }
+details.fonte summary { width: max-content; cursor: pointer; color: var(--bronze); font-size: 12.5px;
+                        font-weight: 700; letter-spacing: .04em; }
+details.fonte summary:focus-visible { outline: 2px solid var(--bronze); outline-offset: 3px; }
+.fonte-meta { margin: 8px 0 0; color: var(--cinza); font-size: 12.5px; }
+.fonte-meta code { color: var(--tinta); font-family: var(--mono); }
+details.fonte pre { margin: 8px 0 0; padding: 12px 14px; overflow-x: auto; background: var(--fundo);
+                    border-radius: 8px; font: 12.5px/1.55 var(--mono); }
+.linhas { margin-top: 6px; background: var(--fundo); font: 12px/1.4 var(--mono); }
+.linhas th, .linhas td { padding: 4px 10px; border-bottom: 1px solid var(--fio); text-align: left;
+                         white-space: nowrap; }
+.linhas th { color: var(--cinza); font-weight: 600; }
+
+footer { padding-top: 8px; padding-bottom: 32px; color: var(--cinza); font-size: 12.5px; }
+footer code { font-family: var(--mono); }
+
+@media (max-width: 960px) {
+  .kpis { grid-template-columns: repeat(2, 1fr); }
+  .kpi.destaque { grid-column: 1 / -1; }
+  .dupla { grid-template-columns: 1fr; }
+}
+@media (max-width: 600px) {
+  .topo-conteudo, main, footer { padding-left: 16px; padding-right: 16px; }
+  .cartao { padding: 18px 16px 14px; }
+  .perfil { text-align: left; }
+  .kpis { grid-template-columns: 1fr; }
+}

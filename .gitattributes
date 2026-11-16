@@ -1,0 +1,8 @@
+# Os exemplos de CNAB são posicionais: o fim de linha (CRLF) fica exatamente como foi gerado
+*.rem -text
+*.ret -text
+
+# Scripts do PowerShell ficam com fim de linha do Windows
+*.ps1 text eol=crlf
+
+*.png binary

@@ -1,0 +1,54 @@
+{
+  "rotinas": [
+    {
+      "nome": "carga_propostas",
+      "descricao": "Copia as propostas novas do sistema de origem para a base de análise.",
+      "comando": ["python", "exemplos/tarefa_ficticia.py", "carga de propostas", "--segundos", "1"],
+      "intervalo_min": 15,
+      "tempo_limite_s": 600,
+      "tentativas": 3,
+      "espera_s": 30
+    },
+    {
+      "nome": "atualiza_indicadores",
+      "descricao": "Recalcula os indicadores da dashboard comercial.",
+      "comando": ["python", "exemplos/tarefa_ficticia.py", "atualização dos indicadores", "--segundos", "2"],
+      "intervalo_min": 60,
+      "tempo_limite_s": 900,
+      "tentativas": 3,
+      "espera_s": 60
+    },
+    {
+      "nome": "conferencia_pagamentos",
+      "descricao": "Confere os pagamentos do dia anterior com o extrato bancário.",
+      "comando": ["python", "exemplos/tarefa_ficticia.py", "conferência dos pagamentos"],
+      "horario": "07:00",
+      "dias": ["seg", "ter", "qua", "qui", "sex"],
+      "tempo_limite_s": 1200,
+      "tentativas": 2,
+      "espera_s": 300
+    },
+    {
+      "nome": "relatorio_diario",
+      "descricao": "Gera e envia o e-mail com o funil do dia.",
+      "comando": ["python", "relatorio_diario.py", "--enviar"],
+      "horario": "08:30",
+      "dias": ["seg", "ter", "qua", "qui", "sex"],
+      "tempo_limite_s": 300,
+      "tentativas": 3,
+      "espera_s": 60
+    },
+    {
+      "nome": "backup_diario",
+      "descricao": "Compacta a pasta de dados e guarda os 7 backups mais recentes.",
+      "comando": [
+        "powershell", "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "backup.ps1",
+        "-Origem", "dados", "-Destino", "D:\\backups\\fintech-exemplo", "-Manter", "7"
+      ],
+      "horario": "02:00",
+      "tempo_limite_s": 1800,
+      "tentativas": 1,
+      "espera_s": 0
+    }
+  ]
+}

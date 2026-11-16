@@ -1,0 +1,49 @@
+# Reunião fictícia de acompanhamento da dashboard comercial da Fintech Exemplo.
+# Transcrição inventada para o exemplo, no formato do transcrever.py; os falantes foram anotados à mão.
+[00:00:03] Diretor: Bom dia, pessoal. A pauta de hoje é curta: a dashboard comercial.
+[00:00:09] Analista: Bom dia. Subi ontem a versão nova, com o funil do dia e o volume por canal.
+[00:00:16] Gerente: Eu abri hoje cedo. Ficou bem mais rápida que a anterior.
+[00:00:21] Diretor: Ficou. Mas a primeira coisa que eu olho de manhã é a conversão, e ela está lá embaixo.
+[00:00:29] Diretor: Precisa ter a conversão por canal logo no topo da tela.
+[00:00:35] Analista: Hoje ela fica no fim da página, depois dos gráficos. Eu subo.
+[00:00:41] Gerente: E quando eu olho a conversão, não sei de quantas propostas estamos falando.
+[00:00:48] Gerente: Dá para mostrar o número absoluto junto com o percentual?
+[00:00:54] Analista: Dá, sim. Fica algo como doze por cento, noventa e oito de oitocentos.
+[00:01:02] Diretor: Isso. Percentual sozinho engana.
+[00:01:06] Diretor: Outra coisa: eu quero ver o volume pago por dia, comparado com a meta do mês.
+[00:01:14] Analista: A meta está numa planilha separada. Eu consigo importar, mas alguém tem que me mandar atualizada todo mês.
+[00:01:23] Gerente: Eu mando. A meta fecha sempre no primeiro dia útil.
+[00:01:28] Diretor: Combinado.
+[00:01:31] Gerente: Da minha parte, tem que dar para filtrar por gerente. Cada um quer ver só a própria carteira.
+[00:01:40] Analista: O filtro por gerente dá trabalho, porque o cadastro do parceiro não tem o gerente. Vou cruzar com a tabela de propostas.
+[00:01:50] Diretor: Quanto tempo leva?
+[00:01:53] Analista: Uns dois dias, se o cruzamento bater.
+[00:01:57] Diretor: Faz. E os números precisam bater com o fechamento do financeiro, senão ninguém confia.
+[00:02:05] Analista: Por dia, bate. No mês tem uma diferença pequena, por causa dos cancelamentos depois do pagamento.
+[00:02:14] Diretor: Então seria bom ter uma nota explicando essa diferença, perto do total.
+[00:02:21] Gerente: Eu sinto falta também da hora da última atualização. Às vezes não sei se o número é de agora ou de ontem.
+[00:02:30] Analista: Atualiza a cada quinze minutos. Posso pôr o horário no rodapé.
+[00:02:36] Diretor: No rodapé ninguém vê. Coloca no alto, do lado do título.
+[00:02:41] Analista: Combinado.
+[00:02:43] Gerente: E o e-mail? Seria bom receber o funil do dia toda manhã, antes da reunião das nove.
+[00:02:51] Analista: Dá para fazer. Já tenho uma rotina que roda às oito e meia; é só incluir o funil.
+[00:03:00] Diretor: Ótimo. Só não precisa mandar no fim de semana.
+[00:03:05] Gerente: Falta pouco para a reunião das dez, então vou direto ao último ponto.
+[00:03:12] Gerente: Os parceiros querem um relatório com a produção de cada um, para conferir a comissão.
+[00:03:20] Diretor: Pode ser, mas sem o dado de um parceiro aparecer para o outro.
+[00:03:26] Analista: Então tem que ser um arquivo por parceiro. Eu gero e mando cada um separado.
+[00:03:34] Diretor: Faz depois da tela. A prioridade é a dashboard.
+[00:03:39] Gerente: Uma dúvida: a dashboard abre no celular?
+[00:03:43] Analista: Abre, mas as tabelas ficam apertadas.
+[00:03:47] Diretor: Os números principais têm que caber na tela do celular sem rolar para o lado.
+[00:03:55] Analista: Certo. No celular, eu empilho os cartões, um embaixo do outro.
+[00:04:02] Diretor: Recapitulando: conversão no topo, com o número absoluto; volume contra a meta; filtro por gerente; hora da atualização no alto.
+[00:04:14] Gerente: E o e-mail do funil de manhã, só em dia útil.
+[00:04:18] Diretor: Isso. Quando fica pronto?
+[00:04:21] Analista: A tela, até sexta. O filtro por gerente, na semana que vem.
+[00:04:27] Gerente: Eu queria ver uma prévia antes de publicar, se der.
+[00:04:33] Analista: Mando uma imagem da tela antes de publicar.
+[00:04:38] Diretor: Perfeito. Mais alguma coisa?
+[00:04:41] Gerente: Por mim, é isso.
+[00:04:44] Analista: Mando o resumo por e-mail ainda hoje.
+[00:04:49] Diretor: Obrigado, pessoal. Até a próxima semana.

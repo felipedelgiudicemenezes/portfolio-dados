@@ -1,0 +1,19 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Gerados pelos scripts (cada README explica como gerar de novo)
+*/dados/
+*/saida/
+*/estado/
+*/logs/
+*.sqlite
+*.sqlite3
+*.db
+
+# Sistema
+.DS_Store
+Thumbs.db
+desktop.ini
